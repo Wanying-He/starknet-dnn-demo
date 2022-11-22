@@ -17,11 +17,29 @@ def _compile_and_deploy_contract(name):
 	cmd = cmd.split(' ')
 	_ = subprocess_run(cmd)
 
-	cmd = f'starknet deploy --contract {name}_compiled.json --network=alpha'
+	#1. declare contracts
+	#2. get class_hash from the result
+	cmd = f'starknet declare --contract {name}_compiled.json  --network=alpha-goerli --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050'
+	cmd = cmd.split(' ')
+	raw_res = subprocess_run(cmd)
+	raw_res = raw_res.split(': ')
+	class_hash = raw_res[1].split('\n')[0]
+
+	###Declare transaction was sent.
+	###Contract class hash: 0x437189b58c8d20085bf43cee652e430b11bba77bfc5145ba39c724cd7958c49
+	###Transaction hash: 0x7aabd951953d2187fcc385c56e59d6b05d46024c93a3e6faa9645a171b014c7
+
+
+
+#Sending the transaction with max_fee: 0.000582 ETH (581603986974124 WEI).
+#Invoke transaction for contract deployment was sent.
+#Contract address: 0x059957113f12904d1724852fc57039bbf012d469c1b67653b3974a43090bd3c9
+#Transaction hash: 0x7adf1392a6bcc222213fd6579cb83ece9cf508eafe4ff39f71e2d171c2c1110
+	cmd = f'starknet deploy --class_hash={class_hash} --max_fee=0 --network=alpha-goerli --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050'
 	cmd = cmd.split(' ')
 	deploy_ret = subprocess_run(cmd)
 	deploy_ret = deploy_ret.split(': ')
-	addr = deploy_ret[1].split('\n')[0]
+	addr = deploy_ret[2].split('\n')[0]
 	tx_hash = deploy_ret[-1]
 	return {'addr':addr, 'tx_hash':tx_hash}
 
@@ -36,7 +54,7 @@ def _poll_list_tx_hashes_until_all_accepted(list_of_tx_hashes, interval_in_sec):
 		for i, tx_hash in enumerate(list_of_tx_hashes):
 			if accepted_list[i]:
 				continue
-			cmd = f"starknet tx_status --network=alpha --hash={tx_hash}".split(' ')
+			cmd = f"starknet tx_status --network=alpha-goerli --hash={tx_hash}".split(' ')
 			ret = subprocess_run(cmd)
 			ret = json.loads(ret)
 			if ret['tx_status'] != 'ACCEPTED_ONCHAIN':
@@ -56,7 +74,7 @@ def _poll_list_tx_hashes_until_all_accepted(list_of_tx_hashes, interval_in_sec):
 
 ## invoking admin_store_addresses of contract
 def _admin_store_addresses(name, contract_addr, idx, store_addr):
-	cmd = f"starknet invoke --network=alpha --address {contract_addr} --abi ../{name}_abi.json --function admin_store_addresses --inputs {idx} {store_addr}"
+	cmd = f"starknet invoke --network=alpha-goerli --address {contract_addr} --abi ../{name}_abi.json --function admin_store_addresses --inputs {idx} {store_addr} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	ret = ret.split(': ')
@@ -67,7 +85,7 @@ def _admin_store_addresses(name, contract_addr, idx, store_addr):
 def _inference(contract_addr, img_input):
 	img_input_string = [str(e) for e in img_input]
 	img_input_joined = ' '.join(img_input_string)
-	cmd = f"starknet call --network=alpha --address {contract_addr} --abi ../mnist_abi.json --function inference --inputs {img_input_joined}"
+	cmd = f"starknet call --network=alpha-goerli --address {contract_addr} --abi ../mnist_abi.json --function inference --inputs {img_input_joined} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	return ret
@@ -75,7 +93,7 @@ def _inference(contract_addr, img_input):
 def _call(name, contract_addr, func_name, img_input):
 	img_input_string = [str(e) for e in img_input]
 	img_input_joined = ' '.join(img_input_string)
-	cmd = f"starknet call --network=alpha --address {contract_addr} --abi ../{name}_abi.json --function {func_name} --inputs {img_input_joined}"
+	cmd = f"starknet call --network=alpha-goerli --address {contract_addr} --abi ../{name}_abi.json --function {func_name} --inputs {img_input_joined} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	return ret
@@ -83,7 +101,7 @@ def _call(name, contract_addr, func_name, img_input):
 def _call_compute(name):
 	img_input_string = [str(e) for e in IMG_INPUT]
 	img_input_joined = ' '.join(img_input_string)
-	cmd = f"starknet call --network=alpha --address {deployed_extracted[name]['addr']} --abi ../{name}_abi.json --function compute --inputs {img_input_joined}"
+	cmd = f"starknet call --network=alpha-goerli --address {deployed_extracted[name]['addr']} --abi ../{name}_abi.json --function compute --inputs {img_input_joined} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	return ret
@@ -105,21 +123,21 @@ for sop_idx in range(10):
 	NAMES.append(f'mnist_z_sop{sop_idx}')
 
 # ## 2. deploy the contracts and save the address and tx hashes
-# deployed = {}
-# for name in NAMES:
-# 	deployed[name] = _compile_and_deploy_contract(f'../{name}')
-# 	print(f'> Tx sent to deploy {name}.cairo')
-# 	print(f'> {deployed[name]}')
-# 	print()
+deployed = {}
+for name in NAMES:
+	deployed[name] = _compile_and_deploy_contract(f'../{name}')
+	print(f'> Tx sent to deploy {name}.cairo')
+	print(f'> {deployed[name]}')
+	print()
 
-# ### export file listing all contract's addresses
-# with open('deploy_log_addresses.txt', 'a') as f:
-# 	f.write('contract addresses and deployment tx hashes:\n')
-# 	for name in NAMES:
-# 		f.write(f"{name} deployed at addr={deployed[name]['addr']} with tx_hash={deployed[name]['tx_hash']}")
-# 		f.write('\n')
-# 	f.write('\n')
-# print('> Created deploy_log_addresses.txt')
+### export file listing all contract's addresses
+with open('deploy_log_addresses.txt', 'a') as f:
+	f.write('contract addresses and deployment tx hashes:\n')
+	for name in NAMES:
+		f.write(f"{name} deployed at addr={deployed[name]['addr']} with tx_hash={deployed[name]['tx_hash']}")
+		f.write('\n')
+	f.write('\n')
+print('> Created deploy_log_addresses.txt')
 
 # # ## 3. monitor tx hashes to wait for all contracts to be deployed
 # # print(f'> Begin monitoring tx hashes for contract deployment')
@@ -163,7 +181,7 @@ for sop_idx in range(10):
 # print('> Deployment completed.')
 
 
-//########################################################
+########################################################
 
 ## parse deployed contract logs for address and tx_hash
 deployed_extracted = {}

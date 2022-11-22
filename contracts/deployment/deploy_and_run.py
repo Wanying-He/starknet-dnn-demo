@@ -163,7 +163,7 @@ for sop_idx in range(10):
 # print('> Deployment completed.')
 
 
-//########################################################
+########################################################
 
 ## parse deployed contract logs for address and tx_hash
 deployed_extracted = {}
