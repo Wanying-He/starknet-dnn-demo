@@ -16,7 +16,7 @@ func admin_store_addresses {
     return ()
 end
 
-################################################
+//################################################
 
 @contract_interface
 namespace IContractZSOP0:
@@ -78,7 +78,7 @@ namespace IContractZSOP9:
     end
 end
 
-################################################
+//################################################
 
 @view
 func compute {
