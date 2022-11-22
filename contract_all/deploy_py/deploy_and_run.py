@@ -116,6 +116,25 @@ PRIME_HALF = PRIME//2
 
 # //###################################################
 
+## 1. create list of contract names to be deployed
+NAMES = []
+NAMES += ['mnist', 'mnist_v1', 'mnist_h1', 'mnist_z']
+for sop_idx in range(32):
+	NAMES.append(f'mnist_v1_sop{sop_idx}')
+	for subsop_idx in range(8):
+		NAMES.append(f'mnist_v1_sop{sop_idx}_subsop{subsop_idx}')
+for sop_idx in range(10):
+	NAMES.append(f'mnist_z_sop{sop_idx}')
+
+## 2. deploy the contracts and save the address and tx hashes
+deployed = {}
+for name in NAMES:
+	deployed[name] = _compile_and_deploy_contract(f'../{name}')
+	# we need to make 'log_contract_deployment_txhash.txt' this and need to store the value
+	print(f'> Tx sent to deploy {name}.cairo')
+	print(f'> {deployed[name]}')
+	print()
+
 ## parse deployed contract logs for address and tx_hash
 deployed_extracted = {}
 with open('log_contract_deployment_txhash.txt', 'r') as f:
@@ -131,32 +150,14 @@ with open('log_contract_deployment_txhash.txt', 'r') as f:
 			name = contract_file_name.split('.')[0]
 			deployed_extracted[name] = {'addr':addr, 'tx_hash':tx_hash}
 
-## 1. create list of contract names to be deployed
-NAMES = []
-NAMES += ['mnist', 'mnist_v1', 'mnist_h1', 'mnist_z']
-for sop_idx in range(32):
-	NAMES.append(f'mnist_v1_sop{sop_idx}')
-	for subsop_idx in range(8):
-		NAMES.append(f'mnist_v1_sop{sop_idx}_subsop{subsop_idx}')
-for sop_idx in range(10):
-	NAMES.append(f'mnist_z_sop{sop_idx}')
-
-# ## 2. deploy the contracts and save the address and tx hashes
-# deployed = {}
-# for name in NAMES:
-# 	deployed[name] = _compile_and_deploy_contract(f'../{name}')
-# 	print(f'> Tx sent to deploy {name}.cairo')
-# 	print(f'> {deployed[name]}')
-# 	print()
-
-### export file listing all contract's addresses
-# with open('deploy_log_addresses.txt', 'a') as f:
-# 	f.write('contract addresses and deployment tx hashes:\n')
-# 	for name in NAMES:
-# 		f.write(f"{name} deployed at addr={deployed[name]['addr']} with tx_hash={deployed[name]['tx_hash']}")
-# 		f.write('\n')
-# 	f.write('\n')
-# print('> Created deploy_log_addresses.txt')
+## export file listing all contract's addresses
+with open('deploy_log_addresses.txt', 'a') as f:
+	f.write('contract addresses and deployment tx hashes:\n')
+	for name in NAMES:
+		f.write(f"{name} deployed at addr={deployed[name]['addr']} with tx_hash={deployed[name]['tx_hash']}")
+		f.write('\n')
+	f.write('\n')
+print('> Created deploy_log_addresses.txt')
 
 ## 3. monitor tx hashes to wait for all contracts to be deployed
 print(f'> Begin monitoring tx hashes for contract deployment')
