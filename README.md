@@ -12,6 +12,7 @@ if you want to use devnet env, follow the instruction below:
 ```
 
 2. setup the account on devnet
+  
   2.1 first, you should run devnet first. 
   ```
     starknet-devnet --load-path dump.pkl --dump-on transaction --dump-path dump.pkl
