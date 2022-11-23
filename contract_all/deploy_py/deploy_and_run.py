@@ -42,7 +42,7 @@ def _compile_and_deploy_contract(name):
 	cmd = cmd.split(' ')
 	deploy_ret = subprocess_run(cmd)
 	deploy_ret = deploy_ret.split(': ')
-	addr = deploy_ret[2].split('\n')[0]
+	addr = deploy_ret[1].split('\n')[0]
 	tx_hash = deploy_ret[-1]
 	return {'addr':addr, 'tx_hash':tx_hash}
 
@@ -58,7 +58,7 @@ def _poll_list_tx_hashes_until_all_accepted(list_of_tx_hashes, interval_in_sec):
 			if accepted_list[i]:
 				continue
 			#starknet tx_status --hash=0x619c6e23946f1d1925d10e9aea64a5fe5b8353e528437c03ccd5524893a29b3 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050
-			cmd = f"starknet tx_status --hash={tx_hash} --network=alpha-goerli --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050".split(' ')
+			cmd = f"starknet tx_status --hash={tx_hash} --network=alpha-goerli --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050".split(' ')
 			ret = subprocess_run(cmd)
 			ret = json.loads(ret)
 			if ret['tx_status'] != 'ACCEPTED_ON_L2':
@@ -89,7 +89,7 @@ def _admin_store_addresses(name, contract_addr, idx, store_addr):
 def _inference(contract_addr, img_input):
 	img_input_string = [str(e) for e in img_input]
 	img_input_joined = ' '.join(img_input_string)
-	cmd = f"starknet call --network=alpha-goerli --address {contract_addr} --abi ../mnist_abi.json --function inference --inputs {img_input_joined} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
+	cmd = f"starknet call --network=alpha-goerli --address {contract_addr} --abi ../mnist_abi.json --function inference --inputs {img_input_joined} --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	return ret
@@ -97,7 +97,7 @@ def _inference(contract_addr, img_input):
 def _call(name, contract_addr, func_name, img_input):
 	img_input_string = [str(e) for e in img_input]
 	img_input_joined = ' '.join(img_input_string)
-	cmd = f"starknet call --network=alpha-goerli --address {contract_addr} --abi ../{name}_abi.json --function {func_name} --inputs {img_input_joined} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
+	cmd = f"starknet call --network=alpha-goerli --address {contract_addr} --abi ../{name}_abi.json --function {func_name} --inputs {img_input_joined} --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	return ret
@@ -105,7 +105,7 @@ def _call(name, contract_addr, func_name, img_input):
 def _call_compute(name):
 	img_input_string = [str(e) for e in IMG_INPUT]
 	img_input_joined = ' '.join(img_input_string)
-	cmd = f"starknet call --network=alpha-goerli --address {deployed_extracted[name]['addr']} --abi ../{name}_abi.json --function compute --inputs {img_input_joined} --max_fee=0 --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
+	cmd = f"starknet call --network=alpha-goerli --address {deployed_extracted[name]['addr']} --abi ../{name}_abi.json --function compute --inputs {img_input_joined} --gateway_url=http://127.0.0.1:5050 --feeder_gateway_url=http://127.0.0.1:5050"
 	cmd = cmd.split(' ')
 	ret = subprocess_run(cmd)
 	return ret
@@ -131,9 +131,18 @@ deployed = {}
 for name in NAMES:
 	deployed[name] = _compile_and_deploy_contract(f'../{name}')
 	# we need to make 'log_contract_deployment_txhash.txt' this and need to store the value
+
 	print(f'> Tx sent to deploy {name}.cairo')
 	print(f'> {deployed[name]}')
 	print()
+
+with open('log_contract_deployment_txhash.txt', 'a') as f:
+	for name in NAMES:
+		f.write(f'> Tx sent to deploy {name}.cairo\n')
+		f.write(f'> {deployed[name]}\n')
+		f.write('\n')
+
+print('> Created log_contract_deployment_txhash.txt')
 
 ## parse deployed contract logs for address and tx_hash
 deployed_extracted = {}
