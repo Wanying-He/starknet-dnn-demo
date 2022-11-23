@@ -5,7 +5,7 @@ Trial contract address:
 
 if you want to use devnet env, follow the instruction below:
 
-### 1. setup the variables
+### 1. set the variables
 ```
   export STARKNET_WALLET=starkware.starknet.wallets.open_zeppelin.OpenZeppelinAccount
   export STARKNET_NETWORK=alpha-goerli
